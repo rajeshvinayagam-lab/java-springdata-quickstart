@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.couchbase.core.mapping.Field;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -31,16 +30,13 @@ public class Route implements Serializable {
     private String airline;
 
     @NotBlank(message = "Airline ID is mandatory")
-    @Field("airlineid")
-    private String airlineId;
+    private String airlineid;
 
     @NotBlank(message = "Source airport is mandatory")
-    @Field("sourceairport")
-    private String sourceAirport;
+    private String sourceairport;
 
     @NotBlank(message = "Destination airport is mandatory")
-    @Field("destinationairport")
-    private String destinationAirport;
+    private String destinationairport;
 
     @NotNull(message = "Stops is mandatory")
     private Integer stops;

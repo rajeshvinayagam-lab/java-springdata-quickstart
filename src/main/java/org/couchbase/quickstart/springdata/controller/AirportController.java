@@ -168,7 +168,7 @@ public class AirportController {
             @RequestParam(defaultValue = "10") int size) {
         try {
             Page<Route> airports = airportService.getDirectConnections(airportCode, PageRequest.of(page, size));
-            Page<String> directConnections = airports.map(Route::getDestinationAirport);
+            Page<String> directConnections = airports.map(Route::getDestinationairport);
             return new ResponseEntity<>(directConnections, HttpStatus.OK);
 
         } catch (Exception e) {

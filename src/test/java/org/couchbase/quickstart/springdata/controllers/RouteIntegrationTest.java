@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 import org.couchbase.quickstart.springdata.models.RestResponsePage;
 import org.couchbase.quickstart.springdata.models.Route;
-import org.couchbase.quickstart.springdata.services.RouteService;
+import org.couchbase.quickstart.springdata.services.CouchRouteService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class RouteIntegrationTest {
         private TestRestTemplate restTemplate;
 
         @Autowired
-        private RouteService routeService;
+        private CouchRouteService routeService;
 
         private void deleteRoute(String baseUri, String routeId) {
                 try {

@@ -3,7 +3,6 @@ package org.couchbase.quickstart.springdata.models;
 import java.io.Serializable;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.couchbase.core.mapping.Field;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -28,8 +27,7 @@ public class Airport implements Serializable {
     private String type;
 
     @NotBlank(message = "Airport name is mandatory")
-    @Field("airportname")
-    private String airportName;
+    private String airportname;
 
     @NotBlank(message = "City is mandatory")
     private String city;

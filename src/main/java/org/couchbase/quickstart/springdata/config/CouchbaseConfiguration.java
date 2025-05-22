@@ -3,6 +3,7 @@ package org.couchbase.quickstart.springdata.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
 import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
 
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Configuration
 @EnableCouchbaseRepositories
+@Profile("couchbase")
 public class CouchbaseConfiguration extends AbstractCouchbaseConfiguration {
 
   @Value("#{systemEnvironment['DB_CONN_STR'] ?: '${spring.couchbase.bootstrap-hosts:localhost}'}")

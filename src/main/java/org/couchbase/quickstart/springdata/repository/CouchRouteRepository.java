@@ -1,7 +1,7 @@
 package org.couchbase.quickstart.springdata.repository;
 
-import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Query;
@@ -14,18 +14,13 @@ import org.springframework.stereotype.Repository;
 import com.couchbase.client.java.query.QueryScanConsistency;
 
 @Scope("inventory")
-@Collection("airport")
+@Collection("route")
 @Repository
 @ScanConsistency(query = QueryScanConsistency.REQUEST_PLUS)
-public interface AirportRepository extends CouchbaseRepository<Airport, String> {
+@Profile("couchbase")
+public interface CouchRouteRepository extends CouchbaseRepository<Route, String> {
 
-    @Query("SELECT META(airport).id as __id,airport.* FROM airport")
-    Page<Airport> findAll(Pageable pageable);
-
-    @Query("SELECT DISTINCT META(route).id as __id,route.* " +
-            "FROM airport as airport " +
-            "JOIN route as route ON airport.faa = route.sourceairport " +
-            "WHERE airport.faa = $1 AND route.stops = 0")
-    Page<Route> getDirectConnections(String targetAirportCode, Pageable pageable);
+    @Query("SELECT META(route).id as __id,route.* FROM route")
+    Page<Route> findAll(Pageable pageable);
 
 }

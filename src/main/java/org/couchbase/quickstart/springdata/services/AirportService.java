@@ -4,47 +4,22 @@ import java.util.Optional;
 
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
-import org.couchbase.quickstart.springdata.repository.AirportRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
-@Service
-public class AirportService {
+public interface AirportService {
 
-    private final AirportRepository airportRepository;
+     Page<Airport> getAllAirports(Pageable pageable);
 
-    public AirportService(AirportRepository airportRepository) {
-        this.airportRepository = airportRepository;
-    }
+     Optional<Airport> getAirportById(String id);
 
-    public Page<Airport> getAllAirports(Pageable pageable) {
-        return airportRepository.findAll(pageable);
-    }
+     Airport saveAirport(Airport airport);
 
-    public Optional<Airport> getAirportById(String id) {
-        return airportRepository.findById(id);
-    }
+     void deleteAirport(String id);
 
-    public Airport saveAirport(Airport airport) {
-        return airportRepository.save(airport);
-    }
+     Airport createAirport(Airport airport);
 
-    public void deleteAirport(String id) {
-        airportRepository.deleteById(id);
-    }
+     Airport updateAirport(String id, Airport airport);
 
-    public Airport createAirport(Airport airport) {
-        return airportRepository.save(airport);
-    }
-
-    public Airport updateAirport(String id, Airport airport) {
-        airport.setId(id);
-        return airportRepository.save(airport);
-    }
-
-    public Page<Route> getDirectConnections(String id, Pageable pageable) {
-        return airportRepository.getDirectConnections(id, pageable);
-    }
-
+     Page<Route> getDirectConnections(String id, Pageable pageable);
 }

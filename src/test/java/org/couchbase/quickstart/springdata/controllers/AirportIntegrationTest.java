@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Airport.Geo;
 import org.couchbase.quickstart.springdata.models.RestResponsePage;
-import org.couchbase.quickstart.springdata.services.AirportService;
+import org.couchbase.quickstart.springdata.services.CouchAirportService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class AirportIntegrationTest {
         private TestRestTemplate restTemplate;
 
         @Autowired
-        private AirportService airportService;
+        private CouchAirportService airportService;
 
         private void deleteAirport(String baseUri, String airportId) {
                 try {

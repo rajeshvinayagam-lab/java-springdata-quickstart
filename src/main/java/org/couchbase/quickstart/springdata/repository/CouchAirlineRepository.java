@@ -1,6 +1,7 @@
 package org.couchbase.quickstart.springdata.repository;
 
 import org.couchbase.quickstart.springdata.models.Airline;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Query;
@@ -16,7 +17,8 @@ import com.couchbase.client.java.query.QueryScanConsistency;
 @Collection("airline")
 @Repository
 @ScanConsistency(query = QueryScanConsistency.REQUEST_PLUS)
-public interface AirlineRepository extends CouchbaseRepository<Airline, String> {
+@Profile("couchbase")
+public interface CouchAirlineRepository extends CouchbaseRepository<Airline, String> {
 
     @Query("SELECT META(air).id AS __id, air.callsign, air.country, air.iata, air.icao, air.id, air.name, air.type " +
             "FROM airline AS air WHERE air.country = $1")

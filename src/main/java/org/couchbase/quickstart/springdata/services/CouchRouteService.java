@@ -1,0 +1,47 @@
+package org.couchbase.quickstart.springdata.services;
+
+import java.util.Optional;
+
+import org.couchbase.quickstart.springdata.models.Route;
+import org.couchbase.quickstart.springdata.repository.CouchRouteRepository;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+@Service
+@Profile("couchbase")
+public class CouchRouteService implements RouteService{
+
+   private final CouchRouteRepository routeRepository;
+
+   public CouchRouteService(CouchRouteRepository routeRepository) {
+         this.routeRepository = routeRepository;
+    }
+
+   public Page<Route> getAllRoutes(Pageable pageable) {
+       return routeRepository.findAll(pageable);
+   }
+
+   public Optional<Route> getRouteById(String id) {
+       return routeRepository.findById(id);
+   }
+
+   public Route saveRoute(Route route) {
+       return routeRepository.save(route);
+   }
+
+   public void deleteRoute(String id) {
+       routeRepository.deleteById(id);
+   }
+
+   public Route createRoute(Route route) {
+       return routeRepository.save(route);
+   }
+
+   public Route updateRoute(String id, Route route) {
+       route.setId(id);
+       return routeRepository.save(route);
+   }
+
+}
