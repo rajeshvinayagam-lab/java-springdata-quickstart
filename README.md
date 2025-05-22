@@ -66,6 +66,7 @@ export DB_PASSWORD=password
 
 The `application.properties` file should look like this:
 
+For Couchbase database connection:
 ```properties
 server.forward-headers-strategy=framework
 spring.couchbase.bootstrap-hosts=DB_CONN_STR
@@ -73,6 +74,22 @@ spring.couchbase.bucket.name=travel-sample
 spring.couchbase.bucket.user=DB_USERNAME
 spring.couchbase.bucket.password=DB_PASSWORD
 spring.couchbase.scope.name=inventory
+```
+Also enable spring profile for Couchbase and disable MongoDB properties
+```properties
+spring.profiles.active=couchbase
+spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+```
+
+For MongoDB database connection:
+```properties
+spring.data.mongodb.uri=mongodb://localhost:27017
+spring.data.mongodb.database=DB_NAME
+```
+Also enable spring profile for MongoDB and disable Couchbase properties
+```properties
+spring.profiles.active=mongodb
 ```
 
 You can specify the connection string, username, and password using environment variables. The application will read these environment variables and use them to connect to the database.
