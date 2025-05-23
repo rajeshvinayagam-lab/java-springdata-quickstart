@@ -2,8 +2,11 @@ package org.couchbase.quickstart.springdata.controller;
 
 import java.util.Optional;
 
+import org.couchbase.quickstart.springdata.config.ApplicationProperties;
 import org.couchbase.quickstart.springdata.models.Airline;
 import org.couchbase.quickstart.springdata.services.AirlineService;
+import org.couchbase.quickstart.springdata.services.CouchAirlineService;
+import org.couchbase.quickstart.springdata.services.MongoAirlineService;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,10 +37,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/airline")
 public class AirlineController {
 
-    private final AirlineService airlineService;
+    private final ApplicationProperties applicationProperties;
 
-    public AirlineController(AirlineService airlineService) {
-        this.airlineService = airlineService;
+    private final CouchAirlineService couchAirlineService;
+
+    private final MongoAirlineService mongoAirlineService;
+
+    public AirlineController(ApplicationProperties applicationProperties,
+                             CouchAirlineService couchAirlineService,
+                             MongoAirlineService mongoAirlineService) {
+        this.applicationProperties = applicationProperties;
+        this.couchAirlineService = couchAirlineService;
+        this.mongoAirlineService = mongoAirlineService;
     }
 
     // All Errors
@@ -55,7 +66,7 @@ public class AirlineController {
     @Parameter(name = "id", description = "Airline ID", required = true, example = "airline_10")
     public ResponseEntity<Airline> getAirline(@PathVariable String id) {
         try {
-            Optional<Airline> airline = airlineService.getAirlineById(id);
+            Optional<Airline> airline = getAirlineService().getAirlineById(id);
             return airline.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                     .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
         } catch (DocumentNotFoundException e) {
@@ -77,7 +88,15 @@ public class AirlineController {
     @Parameter(name = "id", description = "Airline ID", required = true, example = "airline_10")
     public ResponseEntity<Airline> createAirline(@Valid @RequestBody Airline airline) {
         try {
-            Airline newAirline = airlineService.createAirline(airline);
+            Airline newAirline = null;
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                newAirline = couchAirlineService.createAirline(airline);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                newAirline = mongoAirlineService.createAirline(airline);
+            }
             return new ResponseEntity<>(newAirline, HttpStatus.CREATED);
         } catch (DocumentExistsException e) {
             log.error(DOCUMENT_ALREADY_EXISTS, e);
@@ -98,7 +117,15 @@ public class AirlineController {
     @Parameter(name = "id", description = "Airline ID", required = true, example = "airline_10")
     public ResponseEntity<Airline> updateAirline(@PathVariable String id, @Valid @RequestBody Airline airline) {
         try {
-            Airline updatedAirline = airlineService.updateAirline(id, airline);
+            Airline updatedAirline = null;
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                updatedAirline = couchAirlineService.updateAirline(id, airline);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                updatedAirline = mongoAirlineService.updateAirline(id, airline);
+            }
             if (updatedAirline != null) {
                 return new ResponseEntity<>(updatedAirline, HttpStatus.OK);
             } else {
@@ -123,7 +150,14 @@ public class AirlineController {
     @Parameter(name = "id", description = "Airline ID", required = true, example = "airline_10")
     public ResponseEntity<Void> deleteAirline(@PathVariable String id) {
         try {
-            airlineService.deleteAirline(id);
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                couchAirlineService.deleteAirline(id);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                mongoAirlineService.deleteAirline(id);
+            }
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (DocumentNotFoundException | DataRetrievalFailureException e) {
             log.error(DOCUMENT_NOT_FOUND, e);
@@ -147,10 +181,10 @@ public class AirlineController {
             @RequestParam(defaultValue = "10") int size) {
         try {
             if (country == null || country.isEmpty()) {
-                Page<Airline> airlines = airlineService.getAllAirlines(PageRequest.of(page, size));
+                Page<Airline> airlines = getAirlineService().getAllAirlines(PageRequest.of(page, size));
                 return new ResponseEntity<>(airlines, HttpStatus.OK);
             } else {
-                Page<Airline> airlines = airlineService.findByCountry(country, PageRequest.of(page, size));
+                Page<Airline> airlines = getAirlineService().findByCountry(country, PageRequest.of(page, size));
                 return new ResponseEntity<>(airlines, HttpStatus.OK);
             }
         } catch (Exception e) {
@@ -171,7 +205,7 @@ public class AirlineController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Page<Airline> airlines = airlineService.findByDestinationAirport(destinationAirport,
+            Page<Airline> airlines = getAirlineService().findByDestinationAirport(destinationAirport,
                     PageRequest.of(page, size));
 
             return new ResponseEntity<>(airlines, HttpStatus.OK);
@@ -179,5 +213,15 @@ public class AirlineController {
             log.error(INTERNAL_SERVER_ERROR, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private AirlineService getAirlineService() {
+        AirlineService airlineService = null;
+        if (applicationProperties.getReadFromDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE())) {
+            airlineService = couchAirlineService;
+        } else if (applicationProperties.getReadFromDatabase().equalsIgnoreCase(applicationProperties.getMONGODB())) {
+            airlineService = mongoAirlineService;
+        }
+        return airlineService;
     }
 }

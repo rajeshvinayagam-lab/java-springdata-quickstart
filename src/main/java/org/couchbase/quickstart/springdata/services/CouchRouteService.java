@@ -3,14 +3,12 @@ package org.couchbase.quickstart.springdata.services;
 import java.util.Optional;
 
 import org.couchbase.quickstart.springdata.models.Route;
-import org.couchbase.quickstart.springdata.repository.CouchRouteRepository;
-import org.springframework.context.annotation.Profile;
+import org.couchbase.quickstart.springdata.repository.couchbase.CouchRouteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("couchbase")
 public class CouchRouteService implements RouteService{
 
    private final CouchRouteRepository routeRepository;

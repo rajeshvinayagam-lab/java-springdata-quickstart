@@ -1,4 +1,4 @@
-package org.couchbase.quickstart.springdata.repository;
+package org.couchbase.quickstart.springdata.repository.mongodb;
 
 import java.util.ArrayList;
 import java.util.List;

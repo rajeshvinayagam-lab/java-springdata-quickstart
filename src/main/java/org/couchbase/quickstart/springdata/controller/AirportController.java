@@ -2,9 +2,13 @@ package org.couchbase.quickstart.springdata.controller;
 
 import java.util.Optional;
 
+import org.couchbase.quickstart.springdata.config.ApplicationProperties;
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
+import org.couchbase.quickstart.springdata.services.AirlineService;
 import org.couchbase.quickstart.springdata.services.AirportService;
+import org.couchbase.quickstart.springdata.services.CouchAirportService;
+import org.couchbase.quickstart.springdata.services.MongoAirportService;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,10 +39,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AirportController {
 
-    private final AirportService airportService;
+    private final ApplicationProperties applicationProperties;
 
-    public AirportController(AirportService airportService) {
-        this.airportService = airportService;
+    private final CouchAirportService couchAirportService;
+
+    private final MongoAirportService mongoAirportService;
+
+    public AirportController(ApplicationProperties applicationProperties, CouchAirportService couchAirportService,
+                             MongoAirportService mongoAirportService) {
+        this.applicationProperties = applicationProperties;
+        this.couchAirportService = couchAirportService;
+        this.mongoAirportService = mongoAirportService;
     }
 
     // All Errors
@@ -52,7 +63,7 @@ public class AirportController {
     @Parameter(name = "id", description = "The ID of the airport to retrieve", required = true, example = "airport_1254")
     public ResponseEntity<Airport> getAirport(@PathVariable String id) {
         try {
-            Optional<Airport> airport = airportService.getAirportById(id);
+            Optional<Airport> airport = getAirportService().getAirportById(id);
             return airport.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                     .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
         } catch (DocumentNotFoundException | DataRetrievalFailureException e) {
@@ -75,7 +86,15 @@ public class AirportController {
     @Parameter(name = "id", description = "The ID of the airport to create", required = true, example = "airport_1254")
     public ResponseEntity<Airport> createAirport(@PathVariable String id, @Valid @RequestBody Airport airport) {
         try {
-            Airport newAirport = airportService.createAirport(airport);
+            Airport newAirport = null;
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                newAirport = couchAirportService.createAirport(airport);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                newAirport = mongoAirportService.createAirport(airport);
+            }
             return new ResponseEntity<>(newAirport, HttpStatus.CREATED);
         } catch (DocumentExistsException e) {
             log.error(DOCUMENT_ALREADY_EXISTS, e);
@@ -98,7 +117,16 @@ public class AirportController {
     @Parameter(name = "id", description = "The ID of the airport to update", required = true, example = "airport_1254")
     public ResponseEntity<Airport> updateAirport(@PathVariable String id, @Valid @RequestBody Airport airport) {
         try {
-            Airport updatedAirport = airportService.updateAirport(id, airport);
+            Airport updatedAirport = null;
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                updatedAirport = couchAirportService.updateAirport(id, airport);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                updatedAirport = mongoAirportService.updateAirport(id, airport);
+            }
+
             if (updatedAirport != null) {
                 return new ResponseEntity<>(updatedAirport, HttpStatus.OK);
             } else {
@@ -125,7 +153,14 @@ public class AirportController {
     @Parameter(name = "id", description = "The ID of the airport to delete", required = true, example = "airport_1254")
     public ResponseEntity<Void> deleteAirport(@PathVariable String id) {
         try {
-            airportService.deleteAirport(id);
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                couchAirportService.deleteAirport(id);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                mongoAirportService.deleteAirport(id);
+            }
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (DocumentNotFoundException e) {
             log.error(DOCUMENT_NOT_FOUND, e);
@@ -146,7 +181,7 @@ public class AirportController {
     public ResponseEntity<Page<Airport>> listAirports(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Page<Airport> airports = airportService.getAllAirports(PageRequest.of(page, size));
+            Page<Airport> airports = getAirportService().getAllAirports(PageRequest.of(page, size));
             return new ResponseEntity<>(airports, HttpStatus.OK);
         } catch (Exception e) {
             log.error(INTERNAL_SERVER_ERROR, e);
@@ -167,7 +202,7 @@ public class AirportController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Page<Route> airports = airportService.getDirectConnections(airportCode, PageRequest.of(page, size));
+            Page<Route> airports = getAirportService().getDirectConnections(airportCode, PageRequest.of(page, size));
             Page<String> directConnections = airports.map(Route::getDestinationairport);
             return new ResponseEntity<>(directConnections, HttpStatus.OK);
 
@@ -175,5 +210,15 @@ public class AirportController {
             log.error(INTERNAL_SERVER_ERROR, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private AirportService getAirportService() {
+        AirportService airportService = null;
+        if (applicationProperties.getReadFromDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE())) {
+            airportService = couchAirportService;
+        } else if (applicationProperties.getReadFromDatabase().equalsIgnoreCase(applicationProperties.getMONGODB())) {
+            airportService = mongoAirportService;
+        }
+        return airportService;
     }
 }

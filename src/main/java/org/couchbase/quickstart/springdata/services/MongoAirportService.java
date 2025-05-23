@@ -4,14 +4,12 @@ import java.util.Optional;
 
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
-import org.couchbase.quickstart.springdata.repository.MongoAirportRepository;
-import org.springframework.context.annotation.Profile;
+import org.couchbase.quickstart.springdata.repository.mongodb.MongoAirportRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("mongodb")
 public class MongoAirportService implements AirportService{
 
      private final MongoAirportRepository airportRepository;

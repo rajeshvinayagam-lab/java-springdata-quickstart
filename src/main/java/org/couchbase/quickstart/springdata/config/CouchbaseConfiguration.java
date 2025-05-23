@@ -1,11 +1,20 @@
 package org.couchbase.quickstart.springdata.config;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.data.couchbase.CouchbaseClientFactory;
+import org.springframework.data.couchbase.SimpleCouchbaseClientFactory;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
+import org.springframework.data.couchbase.core.CouchbaseTemplate;
+import org.springframework.data.couchbase.core.convert.CouchbaseCustomConversions;
+import org.springframework.data.couchbase.core.convert.MappingCouchbaseConverter;
+import org.springframework.data.couchbase.core.mapping.CouchbaseMappingContext;
 import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
+import org.springframework.data.couchbase.repository.config.RepositoryOperationsMapping;
 
 import com.couchbase.client.core.error.BucketNotFoundException;
 import com.couchbase.client.java.Bucket;
@@ -16,9 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
-@EnableCouchbaseRepositories
-@Profile("couchbase")
-public class CouchbaseConfiguration extends AbstractCouchbaseConfiguration {
+@EnableCouchbaseRepositories(basePackages = "org.couchbase.quickstart.springdata.repository.couchbase")
+public class CouchbaseConfiguration {
 
   @Value("#{systemEnvironment['DB_CONN_STR'] ?: '${spring.couchbase.bootstrap-hosts:localhost}'}")
   private String host;
@@ -32,37 +40,14 @@ public class CouchbaseConfiguration extends AbstractCouchbaseConfiguration {
   @Value("${spring.couchbase.bucket.name:travel-sample}")
   private String bucketName;
 
-  @Override
-  public String getConnectionString() {
-    return host;
-  }
+  @Value("${spring.couchbase.scope.name:inventory}")
+  private String scopeName;
 
-  @Override
-  public String getUserName() {
-    return username;
-  }
-
-  @Override
-  public String getPassword() {
-    return password;
-  }
-
-  @Override
-  public String getBucketName() {
-    return bucketName;
-  }
-
-  @Override
-  public String typeKey() {
-    return "type";
-  }
-
-  @Override
   @Bean(destroyMethod = "disconnect")
   public Cluster couchbaseCluster(ClusterEnvironment couchbaseClusterEnvironment) {
     try {
       log.debug("Connecting to Couchbase cluster at " + host);
-      return Cluster.connect(getConnectionString(), getUserName(), getPassword());
+      return Cluster.connect(host, username, password);
     } catch (Exception e) {
       log.error("Error connecting to Couchbase cluster", e);
       throw e;
@@ -72,15 +57,63 @@ public class CouchbaseConfiguration extends AbstractCouchbaseConfiguration {
   @Bean
   public Bucket getCouchbaseBucket(Cluster cluster) {
     try {
-      if (!cluster.buckets().getAllBuckets().containsKey(getBucketName())) {
-        log.error("Bucket with name {} does not exist. Creating it now", getBucketName());
+      if (!cluster.buckets().getAllBuckets().containsKey(bucketName)) {
+        log.error("Bucket with name {} does not exist. Creating it now", bucketName);
         throw new BucketNotFoundException(bucketName);
       }
-      return cluster.bucket(getBucketName());
+      return cluster.bucket(bucketName);
     } catch (Exception e) {
       log.error("Error getting bucket", e);
       throw e;
     }
   }
+
+  @Bean
+  public ClusterEnvironment clusterEnvironment() {
+    return ClusterEnvironment.builder().build();
+  }
+
+  @Bean
+  public CouchbaseClientFactory couchbaseClientFactory(Cluster cluster) {
+    return new SimpleCouchbaseClientFactory(cluster, bucketName, scopeName);
+  }
+
+  @Bean
+  public CouchbaseCustomConversions couchbaseCustomConversions() {
+    return new CouchbaseCustomConversions(List.of());
+  }
+
+  @Bean
+  public CouchbaseMappingContext couchbaseMappingContext(CouchbaseCustomConversions conversions) {
+    CouchbaseMappingContext context = new CouchbaseMappingContext();
+    context.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
+    return context;
+  }
+
+  @Bean
+  public MappingCouchbaseConverter mappingCouchbaseConverter(
+          CouchbaseMappingContext mappingContext,
+          CouchbaseCustomConversions conversions
+  ) {
+    MappingCouchbaseConverter converter = new MappingCouchbaseConverter(mappingContext);
+    converter.setCustomConversions(conversions);
+    return converter;
+  }
+
+  @Bean(name = "couchbaseTemplate")
+  public CouchbaseTemplate couchbaseTemplate(
+          CouchbaseClientFactory factory,
+          MappingCouchbaseConverter converter
+  ) {
+    return new CouchbaseTemplate(factory, converter);
+  }
+
+  @Bean
+  public RepositoryOperationsMapping couchbaseRepositoryOperationsMapping(
+          @Qualifier("couchbaseTemplate") CouchbaseTemplate template
+  ) {
+    return new RepositoryOperationsMapping(template);
+  }
+
 
 }

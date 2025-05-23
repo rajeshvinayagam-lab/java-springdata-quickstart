@@ -2,7 +2,12 @@ package org.couchbase.quickstart.springdata.controller;
 
 import java.util.Optional;
 
+import org.couchbase.quickstart.springdata.config.ApplicationProperties;
+import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
+import org.couchbase.quickstart.springdata.services.AirportService;
+import org.couchbase.quickstart.springdata.services.CouchRouteService;
+import org.couchbase.quickstart.springdata.services.MongoRouteService;
 import org.couchbase.quickstart.springdata.services.RouteService;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -34,10 +39,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RouteController {
 
-    private final RouteService routeService;
+    private final ApplicationProperties applicationProperties;
 
-    public RouteController(RouteService routeService) {
-        this.routeService = routeService;
+    private final CouchRouteService couchRouteService;
+
+    private final MongoRouteService mongoRouteService;
+
+    public RouteController(ApplicationProperties applicationProperties, CouchRouteService couchRouteService,
+                           MongoRouteService mongoRouteService) {
+        this.applicationProperties = applicationProperties;
+        this.couchRouteService = couchRouteService;
+        this.mongoRouteService = mongoRouteService;
     }
 
     // All Errors
@@ -55,7 +67,7 @@ public class RouteController {
     @Parameter(name = "id", description = "Route ID", required = true, example = "route_10000")
     public ResponseEntity<Route> getRoute(@PathVariable String id) {
         try {
-            Optional<Route> route = routeService.getRouteById(id);
+            Optional<Route> route = getRouteService().getRouteById(id);
             return route.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                     .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
         } catch (DocumentNotFoundException e) {
@@ -77,7 +89,16 @@ public class RouteController {
     @Parameter(name = "id", description = "Route ID", required = true, example = "route_10000")
     public ResponseEntity<Route> createRoute(@Valid @RequestBody Route route) {
         try {
-            Route newRoute = routeService.createRoute(route);
+            Route newRoute = null;
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                newRoute = couchRouteService.createRoute(route);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                newRoute = mongoRouteService.createRoute(route);
+            }
+
             return new ResponseEntity<>(newRoute, HttpStatus.CREATED);
         } catch (DocumentExistsException e) {
             log.error(DOCUMENT_ALREADY_EXISTS, e);
@@ -99,7 +120,16 @@ public class RouteController {
     @Parameter(name = "id", description = "Route ID", required = true, example = "route_10000")
     public ResponseEntity<Route> updateRoute(@PathVariable String id, @Valid @RequestBody Route route) {
         try {
-            Route updatedRoute = routeService.updateRoute(id, route);
+            Route updatedRoute = null;
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                updatedRoute = couchRouteService.updateRoute(id, route);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                updatedRoute = mongoRouteService.updateRoute(id, route);
+            }
+
             if (updatedRoute != null) {
                 return new ResponseEntity<>(updatedRoute, HttpStatus.OK);
             } else {
@@ -125,7 +155,14 @@ public class RouteController {
     @Parameter(name = "id", description = "Route ID", required = true, example = "route_10000")
     public ResponseEntity<Void> deleteRoute(@PathVariable String id) {
         try {
-            routeService.deleteRoute(id);
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                couchRouteService.deleteRoute(id);
+            }
+            if (applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getMONGODB()) ||
+                    applicationProperties.getWriteToDatabase().equalsIgnoreCase(applicationProperties.getBOTH())) {
+                mongoRouteService.deleteRoute(id);
+            }
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (DocumentNotFoundException | DataRetrievalFailureException e) {
             log.error(DOCUMENT_NOT_FOUND, e);
@@ -145,12 +182,22 @@ public class RouteController {
     public ResponseEntity<Page<Route>> listRoutes(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Page<Route> routes = routeService.getAllRoutes(PageRequest.of(page, size));
+            Page<Route> routes = getRouteService().getAllRoutes(PageRequest.of(page, size));
             return new ResponseEntity<>(routes, HttpStatus.OK);
         } catch (Exception e) {
             log.error(INTERNAL_SERVER_ERROR, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private RouteService getRouteService() {
+        RouteService routeService = null;
+        if (applicationProperties.getReadFromDatabase().equalsIgnoreCase(applicationProperties.getCOUCHBASE())) {
+            routeService = couchRouteService;
+        } else if (applicationProperties.getReadFromDatabase().equalsIgnoreCase(applicationProperties.getMONGODB())) {
+            routeService = mongoRouteService;
+        }
+        return routeService;
     }
 
 }

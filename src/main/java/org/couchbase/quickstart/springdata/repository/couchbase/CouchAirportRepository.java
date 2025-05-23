@@ -1,8 +1,7 @@
-package org.couchbase.quickstart.springdata.repository;
+package org.couchbase.quickstart.springdata.repository.couchbase;
 
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Query;
@@ -18,7 +17,6 @@ import com.couchbase.client.java.query.QueryScanConsistency;
 @Collection("airport")
 @Repository
 @ScanConsistency(query = QueryScanConsistency.REQUEST_PLUS)
-@Profile("couchbase")
 public interface CouchAirportRepository extends CouchbaseRepository<Airport, String> {
 
     @Query("SELECT META(airport).id as __id,airport.* FROM airport")

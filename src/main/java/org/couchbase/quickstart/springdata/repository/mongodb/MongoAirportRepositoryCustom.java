@@ -1,4 +1,4 @@
-package org.couchbase.quickstart.springdata.repository;
+package org.couchbase.quickstart.springdata.repository.mongodb;
 
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;

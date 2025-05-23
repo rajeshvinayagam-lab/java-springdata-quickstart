@@ -4,14 +4,12 @@ import java.util.Optional;
 
 import org.couchbase.quickstart.springdata.models.Airport;
 import org.couchbase.quickstart.springdata.models.Route;
-import org.couchbase.quickstart.springdata.repository.CouchAirportRepository;
-import org.springframework.context.annotation.Profile;
+import org.couchbase.quickstart.springdata.repository.couchbase.CouchAirportRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("couchbase")
 public class CouchAirportService implements AirportService{
 
     private final CouchAirportRepository airportRepository;
