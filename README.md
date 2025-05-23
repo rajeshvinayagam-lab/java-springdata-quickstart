@@ -75,9 +75,7 @@ spring.couchbase.bucket.user=DB_USERNAME
 spring.couchbase.bucket.password=DB_PASSWORD
 spring.couchbase.scope.name=inventory
 ```
-Also enable spring profile for Couchbase and disable MongoDB properties
 ```properties
-spring.profiles.active=couchbase
 spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,\
 org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
 ```
@@ -87,10 +85,15 @@ For MongoDB database connection:
 spring.data.mongodb.uri=mongodb://localhost:27017
 spring.data.mongodb.database=DB_NAME
 ```
-Also enable spring profile for MongoDB and disable Couchbase properties
+
+Added feature based properties on application level, based on which we can perform operations on specific database
 ```properties
-spring.profiles.active=mongodb
+# possible value for READ_FROM_DATABASE are mongodb or couchbase
+READ_FROM_DATABASE=mongodb
+# possible value for WRITE_TO_DATABASE are mongodb or couchbase or both
+WRITE_TO_DATABASE=both
 ```
+
 
 You can specify the connection string, username, and password using environment variables. The application will read these environment variables and use them to connect to the database.
 
